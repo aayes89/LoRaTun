@@ -1,6 +1,24 @@
 # LoRaTun
 Envía TCP/IP crudo con Raspberry Pi Pico + SX1278 usando TUN/TAP.
 
+# Requisitos de hardware
+- Raspberry Pi Pico (2)
+- Módulos LoRa SX1278 (433MHz) (2)
+
+# Requisitos de software
+- Sistema Operativo (Windows, Linux o MacOS)
+- Driver TAP instalado previamente.
+- Arduino IDE (para compilar el código a usar en las Rasbperry Pi Pico)
+
+# Esquema de conexión LORA - RPI
+- LORA SS - PICO 5
+- LORA RST - PICO 6
+- LORA DIO0 - PICO 7
+- LORA SCK - PICO 2
+- LORA MISO - PICO 4
+- LORA MOSI - PICO 3
+- LED PIN PICO 25 (indicador)
+
 # Configuración
 Dependencias en Python: <code>pip install pywin32 wmi pyserial</code>
 
