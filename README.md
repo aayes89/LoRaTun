@@ -35,8 +35,16 @@ Dependencias en Python: <code>pip install pywin32 wmi pyserial</code>
 
 # Por mejorar
 * Configuración automática en los sistemas operativos.
-* Añadir soporte para Android e IOs.
- 
+* Añadir soporte para Android e IOs. 
 
 # Licencia
 Éste código utiliza licencia MIT
+
+# Capturas
+<img width="262" height="66" alt="imagen" src="https://github.com/user-attachments/assets/bf36836c-3a7a-4e35-89aa-41c2bc590edf" />
+
+<img width="772" height="209" alt="imagen" src="https://github.com/user-attachments/assets/e8a837ed-2939-481a-b76d-1368696212a8" />
+
+<img width="469" height="563" alt="imagen" src="https://github.com/user-attachments/assets/942f1687-6c41-48c9-a300-ecc04addcd54" />
+
+
