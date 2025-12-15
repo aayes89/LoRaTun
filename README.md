@@ -8,6 +8,7 @@ Los scripts <b>lora_wintun.py</b> (Windows) y <b>lora_tun_macos.py</b> (MacOS), 
 - Módulos LoRa SX1278 (433MHz) (2)
 
 # Requisitos de software
+- Ser administrador del sistema.
 - Sistema Operativo (Windows, Linux o MacOS)
 - Driver TAP instalado previamente.
 - Arduino IDE (para compilar el código a usar en las Rasbperry Pi Pico)
@@ -22,7 +23,7 @@ Los scripts <b>lora_wintun.py</b> (Windows) y <b>lora_tun_macos.py</b> (MacOS), 
 - LED PIN PICO 25 (indicador)
 
 # Configuración
-Dependencias en Python: <code>pip install pywin32 wmi pyserial</code>
+Dependencias en Python: <code>pip install pywin32 wmi pyserial</code><br>
 
 <b>Windows variante 1:</b> 
  - Instala: https://swupdate.openvpn.org/community/releases/tap-windows-9.24.2-I601-Win10.exe<br>
@@ -32,6 +33,7 @@ Dependencias en Python: <code>pip install pywin32 wmi pyserial</code>
  
  <b>Windos Variante 2: </b>
  - Ejecutar desde PowerShell como administrador el script <b>lora_wintun.py</b>.
+ - Establecer la IP de forma manual si al crease la interfaz no aparece como espera. 
 
 <b>Linux: </b>
 - Ejecutar los siguientes comandos en el terminal de tu preferencia como administrador: <code>
@@ -54,5 +56,10 @@ Dependencias en Python: <code>pip install pywin32 wmi pyserial</code>
 <img width="772" height="209" alt="imagen" src="https://github.com/user-attachments/assets/e8a837ed-2939-481a-b76d-1368696212a8" />
 
 <img width="469" height="563" alt="imagen" src="https://github.com/user-attachments/assets/942f1687-6c41-48c9-a300-ecc04addcd54" />
+
+<img width="706" height="671" alt="imagen" src="https://github.com/user-attachments/assets/cfcb318a-012e-4749-b604-2666950103dc" />
+
+<img width="885" height="626" alt="imagen" src="https://github.com/user-attachments/assets/55500142-6c44-4a46-a0ec-52991533f592" />
+
 
 
