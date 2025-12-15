@@ -34,7 +34,7 @@ Dependencias en Python: <code>pip install pywin32 wmi pyserial</code><br>
  - Ejecutar desde PowerShell como administrador el script <b>lora_wintun_slip.py</b>.
  - Establecer la IP de forma manual si al crease la interfaz no aparece como espera. 
 
-<b>Linux: </b>
+<b>Linux: (PRUEBAS PENDIENTE)</b>
 - Ejecutar los siguientes comandos en el terminal de tu preferencia como administrador: <code>
   sudo ip addr add 10.10.0.1/24 dev LoRaTun0
   sudo ip link set LoRaTun0 up</code>
