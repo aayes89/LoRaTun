@@ -1,5 +1,6 @@
 # LoRaTun
-Envía TCP/IP crudo con Raspberry Pi Pico + SX1278 usando TUN/TAP por medio del script TUN.py.
+Envía TCP/IP crudo con Raspberry Pi Pico + SX1278 usando TUN/TAP por medio del script TUNVirtual.py (en desarrollo constante)<br>
+Los scripts <b>lora_wintun.py</b> (Windows) y <b>lora_tun_macos.py</b> (MacOS), establecen un enlace vía TUN sobre la capa 3 (IP), permitiendo el envío de PING con baja tasa de jitter.
 
 # Requisitos de hardware
 - Raspberry Pi Pico (2)
