@@ -2,7 +2,8 @@
 Envía TCP/IP crudo con Raspberry Pi Pico + SX1278 usando TUN/TAP por medio del script TUNVirtual.py (en desarrollo constante)<br>
 Los scripts <b>lora_wintun.py</b> (Windows) y <b>lora_tun_macos.py</b> (MacOS), establecen un enlace vía TUN sobre la capa 3 (IP), permitiendo el envío de PING con baja tasa de jitter.<br>
 Para comodidad de la implementación, se realizaron cambios en el firmware para filtrar aquellos paquetes que no estén dentro de los rangos permitidos de IPv4 aunque con un MTU bajo.<br>
-De igual forma para los scripts <b>lora_wintun.py</b> y <b>lora_tun_macos.py</b> se realizaron optimizaciones para filtrar paquetes que no estén en el rango (0x0800 a 0x0806) o no sean <b>URG</b> (Urgente), <b>ACK</b> (Reconocimiento), <b>PSH</b> (Empujar), <b>RST</b> (Restablecer), <b>SYN</b>	(Sincronizar), <b>FIN</b> (Finalizar).
+De igual forma para los scripts <b>lora_wintun.py</b> y <b>lora_tun_macos.py</b> se realizaron optimizaciones para filtrar paquetes que no estén en el conjunto (0x0800 y 0x0806) o no sean <b>URG</b> (Urgente), <b>ACK</b> (Reconocimiento), <b>PSH</b> (Empujar), <b>RST</b> (Restablecer), <b>SYN</b>	(Sincronizar), <b>FIN</b> (Finalizar).<br>
+Ver <a href="https://en.wikipedia.org/wiki/EtherType">EtherType</a> para referencias.
 
 # Requisitos de hardware
 - Raspberry Pi Pico (2)
