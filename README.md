@@ -4,6 +4,7 @@ Establece conexión TCP/IP sobre SLIP con Raspberry Pi Pico + SX1278 usando TUN 
 # Requisitos de hardware
 - Raspberry Pi Pico (2)
 - Módulos LoRa SX1278 (433MHz) (2)
+- PC o Laptop (2)
 
 # Requisitos de software
 - Ser administrador del sistema.
