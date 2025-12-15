@@ -1,12 +1,5 @@
 # LoRaTun
-Envía TCP/IP crudo con Raspberry Pi Pico + SX1278 usando TUN/TAP por medio del script TUNVirtual.py (en desarrollo constante)<br>
-
-Los scripts <b>lora_wintun.py</b> (Windows) y <b>lora_tun_macos.py</b> (MacOS), establecen un enlace vía TUN sobre la capa 3 (IP), permitiendo el envío de PING con baja tasa de jitter.<br>
-
-Para comodidad de la implementación, se realizaron cambios en el firmware para filtrar aquellos paquetes que no estén dentro de los rangos permitidos de IPv4 aunque con un MTU bajo.<br>
-
-De igual forma para los scripts <b>lora_wintun.py</b> y <b>lora_tun_macos.py</b> se realizaron optimizaciones para filtrar paquetes que no estén en el conjunto (0x0800 y 0x0806) o no sean <b>URG</b> (Urgente), <b>ACK</b> (Reconocimiento), <b>PSH</b> (Empujar), <b>RST</b> (Restablecer), <b>SYN</b>	(Sincronizar), <b>FIN</b> (Finalizar).<br>
-Ver <a href="https://en.wikipedia.org/wiki/EtherType">EtherType</a> para referencias.
+Establece conexión TCP/IP sobre SLIP con Raspberry Pi Pico + SX1278 usando TUN sobre capa 3, permitiendo servicios como PING, SSH, WWW, etc. <br>
 
 # Requisitos de hardware
 - Raspberry Pi Pico (2)
@@ -37,7 +30,7 @@ Dependencias en Python: <code>pip install pywin32 wmi pyserial</code><br>
  - De igual forma si falla la configuración automática de la interfaz de red, usar: <code>netsh interface ip set address name="LoRaTun0" static 10.10.0.1 255.255.255.0</code>
  
  <b>Windos Variante 2: </b>
- - Ejecutar desde PowerShell como administrador el script <b>lora_wintun.py</b>.
+ - Ejecutar desde PowerShell como administrador el script <b>lora_wintun_slip.py</b>.
  - Establecer la IP de forma manual si al crease la interfaz no aparece como espera. 
 
 <b>Linux: </b>
@@ -46,7 +39,7 @@ Dependencias en Python: <code>pip install pywin32 wmi pyserial</code><br>
   sudo ip link set LoRaTun0 up</code>
 
 <b>MacOS: </b>
-- Ejecutar el script lora_tun_macos.py como administrado. (<b>MacOS UTUN no es accesible de otra forma</b>)
+- Ejecutar el script lora_utun_slip.py como administrador. (<b>MacOS UTUN no es accesible de otra forma</b>)
  
 # Por mejorar
 * Configuración automática en los sistemas operativos.
