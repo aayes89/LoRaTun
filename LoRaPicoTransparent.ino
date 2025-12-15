@@ -25,34 +25,38 @@ SOFTWARE.
 * Código creado por Slam(2025)
 * Github: https://github.com/aayes89
 */
-// --- LIBRERÍAS ---
+// LIBRERIAS
 #include <SPI.h>
 #include <LoRa.h>
-// --- CONEXIONES LORA-PICO ---
-#define LORA_SS    5
-#define LORA_RST   6
-#define LORA_DIO0  7
-#define LORA_SCK   2
-#define LORA_MISO  4
-#define LORA_MOSI  3
-#define LED_PIN    25
-// --- FRECUENCIA ---
-#define LORA_FREQ  433E6
-// --- GLOBALES ---
-#define SERIAL_BAUD 115200
-#define TX_BUFFER_SIZE 128
+// CONSTANTES GLOBALES
+#define LORA_SS 5
+#define LORA_RST 6
+#define LORA_DIO0 7
+#define LORA_SCK 2
+#define LORA_MISO 4
+#define LORA_MOSI 3
 
-byte txBuffer[TX_BUFFER_SIZE];
-int txLen = 0;
-unsigned long lastTx = 0;
+#define LED_PIN 25
+#define FREQ 433E6
 
+#define MAGIC 0xA5
+#define TYPE_DATA 0x01
+
+#define MAX_PAYLOAD 180
+#define LEN_HDR 2
+#define MIN_ETH 60
+
+uint8_t tx_seq = 0;
+// INICIALIZACION DE PARAMETROS
 void setup() {
-  Serial.begin(SERIAL_BAUD);
-  while (!Serial);
-
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
+  Serial.begin(115200);
+  while (!Serial)
+    ;
+
+  // SPI (defaults OK en Pico)
   SPI.setSCK(LORA_SCK);
   SPI.setMISO(LORA_MISO);
   SPI.setMOSI(LORA_MOSI);
@@ -60,46 +64,75 @@ void setup() {
 
   LoRa.setPins(LORA_SS, LORA_RST, LORA_DIO0);
 
-  if (!LoRa.begin(LORA_FREQ)) {
+  if (!LoRa.begin(FREQ)) {
     while (1) {
-      digitalWrite(LED_PIN, HIGH);
-      delay(100);
-      digitalWrite(LED_PIN, LOW);
-      delay(100);
+      digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+      delay(200);
     }
   }
-
+  // COMPORTAMIENTO DE LORA
   LoRa.setTxPower(20, PA_OUTPUT_PA_BOOST_PIN);
-  LoRa.setSpreadingFactor(7);
+  LoRa.setSpreadingFactor(8);
   LoRa.setSignalBandwidth(125E3);
-  LoRa.setCodingRate4(5);
+  LoRa.setCodingRate4(6);
+  LoRa.disableCrc();
 
-  Serial.println("LoRa Serial Bridge Ready");
+  Serial.println("LORA BRIDGE READY");
 }
 
 void loop() {
-  // RX
-  int packetSize = LoRa.parsePacket();
-  if (packetSize) {
-    digitalWrite(LED_PIN, HIGH);
-    while (LoRa.available()) {
-      Serial.write(LoRa.read());
+  // USB -> LoRa 
+  if (Serial.available() >= LEN_HDR) {
+
+    uint16_t len;
+    Serial.readBytes((uint8_t*)&len, 2);
+    
+    // DESCARTAR PAQUETES BASURA
+    if (len < MIN_ETH || len > MAX_PAYLOAD) {      
+      return;
     }
+    
+    // PREPARAR BUFER DE LECTURA
+    uint8_t buf[MAX_PAYLOAD];
+    size_t got = Serial.readBytes(buf, len);
+    if (got != len) return;
+    
+    // ENVIAR EL PAQUETE
+    LoRa.beginPacket();
+    LoRa.write(MAGIC);
+    LoRa.write(TYPE_DATA);
+    LoRa.write(tx_seq++);
+    LoRa.write(buf, len);
+    LoRa.endPacket();
+
+    digitalWrite(LED_PIN, HIGH);
+    delay(8);
     digitalWrite(LED_PIN, LOW);
   }
 
-  // TX
-  while (Serial.available() && txLen < TX_BUFFER_SIZE) {
-    txBuffer[txLen++] = Serial.read();
-    lastTx = millis();
-  }
 
-  if (txLen > 0 && (txLen == TX_BUFFER_SIZE || (millis() - lastTx > 300))) {
+  // LoRa -> USB 
+  int p = LoRa.parsePacket();
+  if (p >= 4) {
+
+    if (LoRa.read() != MAGIC) return;
+    if (LoRa.read() != TYPE_DATA) return;
+    
+    //RESERVADO
+    uint8_t seq = LoRa.read(); 
+
+    uint16_t len = p - 3;
+    if (len < MIN_ETH || len > MAX_PAYLOAD) return;
+
+    // ENVIAR PREFIJO DE LONGITUD
+    Serial.write((uint8_t*)&len, 2);
+
+    while (LoRa.available()) {
+      Serial.write(LoRa.read());
+    }
+
     digitalWrite(LED_PIN, HIGH);
-    LoRa.beginPacket();
-    LoRa.write(txBuffer, txLen);
-    LoRa.endPacket();
-    txLen = 0;
+    delay(20);
     digitalWrite(LED_PIN, LOW);
   }
 }
