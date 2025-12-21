@@ -174,16 +174,13 @@ def setup_utun(ip, peer, mtu):
 def setup_linux_tun(ip, peer, mtu):
     import fcntl
     tun = open("/dev/net/tun", "r+b", buffering=0)
-
     ifr = struct.pack(
         "16sH",
         b"lora%d",
         IFF_TUN | IFF_NO_PI
     )
-
     ifs = fcntl.ioctl(tun, TUNSETIFF, ifr)
     name = ifs[:16].rstrip(b"\0").decode()
-
     subprocess.run(
         ["ip", "addr", "add", f"{ip}/32", "peer", peer, "dev", name],
         check=True
@@ -192,16 +189,20 @@ def setup_linux_tun(ip, peer, mtu):
         ["ip", "link", "set", "dev", name, "mtu", str(mtu), "up"],
         check=True
     )
-    subprocess.run(
+    # Añadir ruta al peer, ignorando si ya existe (lo crea automáticamente el kernel)
+    result = subprocess.run(
         ["ip", "route", "add", peer, "dev", name],
-        check=True
+        capture_output=True,
+        text=True
     )
+    if result.returncode != 0 and "File exists" not in result.stderr:
+        raise RuntimeError(f"Error añadiendo ruta: {result.stderr}")
 
     def tun_recv():
         data = tun.read(4096)
         if not data:
             return None
-        if data[0] >> 4 != 4:
+        if data[0] >> 4 != 4:  # IPv4
             return None
         return data
 
@@ -241,7 +242,7 @@ def run_bridge(tun_recv, tun_send, ser):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", required=True)
-    parser.add_argument("--baud", type=int, default=115200)
+    parser.add_argument("--baud", type=int, default=115200) # 921600 o 115200
     parser.add_argument("--ip", required=True)
     parser.add_argument("--peer", required=True)
     parser.add_argument("--mtu", type=int, default=576)
