@@ -28,13 +28,22 @@ SOFTWARE.
 
 #include <SPI.h>
 #include <LoRa.h>
-
+// custom
+/*
 #define LORA_SS   5
 #define LORA_RST  6
 #define LORA_DIO0 7
 #define LORA_SCK  2
 #define LORA_MISO 4
 #define LORA_MOSI 3
+*/
+// meshtastic pinout
+#define LORA_SS   3
+#define LORA_RST  15
+#define LORA_DIO0 20
+#define LORA_SCK  10
+#define LORA_MISO 12
+#define LORA_MOSI 11
 
 #define LED_PIN 25
 #define FREQ 433E6
