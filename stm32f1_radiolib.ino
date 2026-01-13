@@ -2,137 +2,133 @@
 #include <SPI.h>
 #include <RadioLib.h>
 
-#define LORA_NSS PA4
-#define LORA_SCK PA5
-#define LORA_NRST PA3
-#define LORA_BUSY PA2
-#define LORA_MOSI PA7
-#define LORA_MISO PA6
-#define LORA_DIO1 PC15
-//#define LORA_DIO2  NC
-#define LORA_TXEN PA0
-#define LORA_RXEN PA1
+// ────────────────────────────────────────────────
+// Pines (ajusta según tu módulo / board)
+#define LORA_NSS    PA4
+#define LORA_SCK    PA5
+#define LORA_MOSI   PA7
+#define LORA_MISO   PA6
+#define LORA_NRST   PA3
+#define LORA_BUSY   PA2
+#define LORA_DIO1   PC15
+#define LORA_TXEN   PA0     // HIGH → TX, LOW → RX   (invierte si es activo en LOW)
+#define LORA_RXEN   PA1
+#define LED_PIN     PB11
 
-#define LED_PIN PB11  // PC13
-#define LORA_MAX_PACKET 255   // SX1262
-#define SERIAL_FLUSH_MS 5     // timeout para agrupar bytes
+#define UART_BAUD   460800 // 115200 230400 460800
+#define MAX_PKT     128     // ↑ si necesitas más throughput (max ~250)
 
+SX1262 radio = new Module(LORA_NSS, LORA_DIO1, LORA_NRST, LORA_BUSY);
 
-SX1262 radio = new Module(LORA_NSS, LORA_DIO1, LORA_NRST, LORA_BUSY);  //, spi1);
+volatile bool txDone = false;
+volatile bool rxDone = false;
 
+uint8_t txBuf[MAX_PKT];
+uint8_t rxBuf[MAX_PKT];
+
+volatile size_t txCount = 0;
+
+// ────────────────────────────────────────────────
+// Callbacks IRQ (importante: ICACHE_RAM_ATTR si es ESP, no en STM32)
+void setTxFlag() {
+  txDone = true;
+}
+
+void setRxFlag() {
+  rxDone = true;
+}
+
+// ────────────────────────────────────────────────
 void setup() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(LORA_TXEN, OUTPUT);
   pinMode(LORA_RXEN, OUTPUT);
 
-  digitalWrite(LED_PIN, HIGH);
-  delay(200);
-  digitalWrite(LED_PIN, LOW);
+  digitalWrite(LED_PIN, HIGH); delay(100); digitalWrite(LED_PIN, LOW);
   digitalWrite(LORA_TXEN, LOW);
-  digitalWrite(LORA_RXEN, HIGH);
+  digitalWrite(LORA_RXEN, HIGH);   // empezar en RX
 
-  Serial.begin(460800); // 115200
-  while (!Serial)
-    ;
-  // SPI
-  SPI.setMISO(LORA_MISO);
+  Serial.begin(UART_BAUD);
+  while(!Serial);   // comenta en producción
+
   SPI.setMOSI(LORA_MOSI);
+  SPI.setMISO(LORA_MISO);
   SPI.setSCLK(LORA_SCK);
   SPI.begin();
 
-  // Reset SX1262
-  pinMode(LORA_NRST, OUTPUT);
-  digitalWrite(LORA_NRST, LOW);
-  delay(10);
-  digitalWrite(LORA_NRST, HIGH);
-  delay(10);
+  // Reset
+  digitalWrite(LORA_NRST, LOW); delay(10);
+  digitalWrite(LORA_NRST, HIGH); delay(20);
 
-  pinMode(LORA_BUSY, INPUT);
-  Serial.print("BUSY=");
-  Serial.println(digitalRead(LORA_BUSY)); // debe ser 0
+  // Configuración recomendada para throughput + alcance razonable
+  // Puedes bajar SF a 7–8 si quieres más velocidad (menor alcance)
+  int state = radio.begin(
+    915.0,          // frecuencia (cambia a tu banda)
+    250.0,          // BW más ancha = más velocidad
+    9,              // SF9 buen compromiso velocidad/alcance
+    5,              // CR 4/5 → menos overhead
+    0x12,           // sync word private
+    22,             // potencia (ajusta según regulaciones y módulo)
+    8,              // preamble
+    0.0             // TCXO  → 1.6 o 1.8 si tu módulo lo tiene
+  );
 
-  // PARAMS  
-  //radio.setRegulatorMode(RADIOLIB_SX126X_REGULATOR_DC_DC); // por si LDO falla
-  radio.setDio2AsRfSwitch(true);  // DX-LR30 usa DIO2
-
-  /*float freq = 434.
-    float bw = 125.
-    int sf = 9
-    int cr = 7
-    int syncWord = 18
-    int power = 10
-    int preambleLength = 8
-    float tcxoVoltage = 1.6000000000000001
-    bool useRegulatorLDO = false
-  */
-  radio.XTAL = true;
-  int state = radio.begin(915.0, 125.0, 9, 7, 0x12, 22, 8, 0.0);
-  Serial.print("Radio init: ");
-  Serial.println(state);
-
-  if (state == RADIOLIB_ERR_NONE) {
-    Serial.println("DX-LR30 SX1262 READY");
-    digitalWrite(LED_PIN, LOW);
-  } else {
-    Serial.println("Radio FAILED");
-    while (1) {
-      digitalWrite(LED_PIN, !digitalRead(LED_PIN));
-      delay(200);
-    }
+  if (state != RADIOLIB_ERR_NONE) {
+    Serial.print("begin failed: "); Serial.println(state);
+    while(true) { digitalWrite(LED_PIN, !digitalRead(LED_PIN)); delay(200); }
   }
 
-  Serial.println("DX-LR30 (SX1262) OK");
+  radio.setDio2AsRfSwitch(true);          // muchos módulos lo usan
+  radio.setPacketSentAction(setTxFlag);
+  radio.setPacketReceivedAction(setRxFlag);
+
+  radio.setRxBoostedGainMode(true); // mejora sensibilidad RX (consume 1-2mA extra)
+  radio.startReceive();
+  Serial.println("SX1262 ready - transparent mode");
 }
 
+// ────────────────────────────────────────────────
 void loop() {
-  static uint8_t txBuf[LORA_MAX_PACKET];
-  static size_t txLen = 0;
-  static uint32_t lastByteTime = 0;
-
-  /* =======================
-     USB → LoRa
-     ======================= */
-
-  while (Serial.available()) {
-    if (txLen < LORA_MAX_PACKET) {
-      txBuf[txLen++] = Serial.read();
-      lastByteTime = millis();
-    } else {
-      break;
+  // RX → UART (prioridad)
+  if (rxDone) {
+    rxDone = false;
+    size_t len = radio.getPacketLength(true);
+    if (len > 0 && len <= MAX_PKT) {
+      if (radio.readData(rxBuf, len) == RADIOLIB_ERR_NONE) {
+        Serial.write(rxBuf, len);
+      }
     }
+    radio.startReceive();  // inmediato
   }
 
-  // Si hay datos y pasó el timeout → enviar
-  if (txLen > 0 && (millis() - lastByteTime) > SERIAL_FLUSH_MS) {
+  // Acumula UART sin bloquear
+  while (Serial.available() && txCount < MAX_PKT) {
+    txBuf[txCount++] = Serial.read();
+  }
+
+  static uint32_t lastByteMs = 0;
+  if (txCount > 0) lastByteMs = millis();
+
+  // Envía si: lleno, o timeout 4–8 ms sin bytes nuevos, y no enviando
+  if (txCount > 0 && !txDone && (txCount >= MAX_PKT || (millis() - lastByteMs >= 5))) {
     digitalWrite(LORA_RXEN, LOW);
     digitalWrite(LORA_TXEN, HIGH);
 
-    int state = radio.transmit(txBuf, txLen);
+    radio.startTransmit(txBuf, txCount);
+    txCount = 0;
+  }
+
+  // Fin TX → back to RX
+  if (txDone) {
+    txDone = false;
+    
+    radio.finishTransmit(); // limpieza post-TX
 
     digitalWrite(LORA_TXEN, LOW);
     digitalWrite(LORA_RXEN, HIGH);
 
-    txLen = 0;
-
-    radio.startReceive();
-  }
-
-  /* =======================
-     LoRa → USB
-     ======================= */
-
-  uint8_t rxBuf[LORA_MAX_PACKET];
-  int len = radio.getPacketLength();
-
-  if (len > 0 && len <= LORA_MAX_PACKET) {
-    int state = radio.readData(rxBuf, len);
-
-    if (state == RADIOLIB_ERR_NONE) {
-      for (int i = 0; i < len; i++) {
-        Serial.write(rxBuf[i]);
-      }
-    }
-
-    radio.startReceive();
+    // Limpieza crítica para evitar "stuck" en RX continuo
+    radio.standby();
+    radio.startReceive();  // fuerza reset de estado interno
   }
 }
